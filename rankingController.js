@@ -1,32 +1,48 @@
-import { openDb } from "./database.js";
+import { db } from "./database.js";
 
-// Buscar ranking inteiro ordenado
-export async function getRanking(request, response) {
-  const db = await openDb();
-  const ranking = await db.all("SELECT * FROM ranking ORDER BY pontos DESC");
-  response.json(ranking);
+// PEGAR TOP 3
+export async function getPodio(req, res) {
+  try {
+    const [rows] = await db.execute(
+      "SELECT username, total_points FROM ranking ORDER BY total_points DESC LIMIT 3"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Erro ao carregar pódio" });
+  }
 }
 
-// Adicionar um novo jogador ao ranking
-export async function addPlayer(request, response) {
-  const { nome, pontos } = request.body;
+// PEGAR DO 4° EM DIANTE
+export async function getRanking(req, res) {
+  try {
+    const [rows] = await db.execute(
+      "SELECT username, total_points FROM ranking ORDER BY total_points DESC LIMIT 9999 OFFSET 3"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Erro ao carregar ranking" });
+  }
+}
 
-  if (!nome || pontos === undefined) {
-    return response.status(400).json({ error: "Envie nome e pontos!" });
+// ADICIONAR JOGADOR
+export async function addPlayer(req, res) {
+  const { username, total_points } = req.body;
+
+  if (!username || total_points === undefined) {
+    return res.status(400).json({ error: "Envie username e total_points!" });
   }
 
-  const db = await openDb();
-  await db.run("INSERT INTO ranking (nome, pontos) VALUES (?, ?)", [
-    nome,
-    pontos,
-  ]);
+  try {
+    await db.execute(
+      "INSERT INTO ranking (username, total_points) VALUES (?, ?)",
+      [username, total_points]
+    );
 
-  response.json({ message: "Jogador adicionado!" });
-}
-
-// Resetar ranking (opcional)
-export async function resetRanking(request, response) {
-  const db = await openDb();
-  await db.run("DELETE FROM ranking");
-  response.json({ message: "Ranking resetado!" });
+    res.json({ message: "Jogador salvo!" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Erro ao salvar jogador" });
+  }
 }

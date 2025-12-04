@@ -1,22 +1,11 @@
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
+import mysql from "mysql2/promise";
+import dotenv from "dotenv";
 
-// Abrir conexão com o banco
-export async function openDb() {
-  return open({
-    filename: "./ranking.db",
-    driver: sqlite3.Database,
-  });
-}
+dotenv.config();
 
-// Criar tabela do ranking
-export async function createTable() {
-  const db = await openDb();
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS ranking (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nome TEXT NOT NULL,
-      pontos INTEGER NOT NULL
-    );
-  `);
-}
+export const db = await mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});
